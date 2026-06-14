@@ -1,8 +1,7 @@
 const AppError = require('../../utils/AppError');
 const repo = require('./linea.repository');
 
-// Whitelist: solo estos campos pueden escribirse desde la API.
-// Protege contra inyeccion de columnas via "SET ?".
+// Whitelist de ESCRITURA: solo estos campos pueden guardarse desde la API.
 const ALLOWED_FIELDS = [
   'tienda_id',
   'flujo',
@@ -29,7 +28,29 @@ const ALLOWED_FIELDS = [
 
 const REQUIRED_ON_CREATE = ['tienda_id', 'flujo', 'fase'];
 
-// Filtra el payload dejando solo campos permitidos
+// Whitelist de FILTROS (?campo=valor)
+const FILTERABLE = [
+  'fase',
+  'flujo',
+  'cliente_id',
+  'proveedor_id',
+  'tienda_id',
+  'taller',
+  'tipo_cobro',
+  'movil_en_tienda',
+  'avisado',
+];
+
+const BOOLEAN_FILTERS = ['movil_en_tienda', 'avisado'];
+
+// Whitelist de ORDEN (?orderBy=clave). Mapea a una expresion SQL segura.
+const SORT_EXPRESSIONS = {
+  id: 'l.id',
+  fecha_entrada: 'l.fecha_entrada',
+  fecha_recogida_prevista: 'l.fecha_recogida_prevista',
+  dias_reparacion: 'DATEDIFF(CURDATE(), l.fecha_entrada)',
+};
+
 function pick(payload) {
   const out = {};
   for (const key of ALLOWED_FIELDS) {
@@ -38,8 +59,40 @@ function pick(payload) {
   return out;
 }
 
-async function list() {
-  return repo.findAll();
+// Construye el objeto de filtros desde req.query (solo claves permitidas)
+function buildFilters(query) {
+  const filters = {};
+  for (const key of FILTERABLE) {
+    const value = query[key];
+    if (value === undefined || value === '') continue;
+
+    if (BOOLEAN_FILTERS.includes(key)) {
+      filters[key] = value === 'true' || value === '1' ? 1 : 0;
+    } else {
+      filters[key] = value;
+    }
+  }
+  return filters;
+}
+
+async function list(query = {}) {
+  const filters = buildFilters(query);
+
+  // orderBy: si no es valido, error claro (no se adivina)
+  let orderByExpr = SORT_EXPRESSIONS.id;
+  if (query.orderBy !== undefined) {
+    if (!SORT_EXPRESSIONS[query.orderBy]) {
+      throw new AppError(
+        `orderBy no valido. Permitidos: ${Object.keys(SORT_EXPRESSIONS).join(', ')}`,
+        400,
+      );
+    }
+    orderByExpr = SORT_EXPRESSIONS[query.orderBy];
+  }
+
+  const orderDir = String(query.order).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+  return repo.findAll(filters, orderByExpr, orderDir);
 }
 
 async function get(id) {

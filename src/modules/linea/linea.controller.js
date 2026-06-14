@@ -4,7 +4,7 @@ const service = require('./linea.service');
 // Solo traduce HTTP <-> service. Sin logica ni SQL.
 
 const list = asyncHandler(async (req, res) => {
-  const lineas = await service.list();
+  const lineas = await service.list(req.query);
   res.json({ success: true, data: lineas, error: null });
 });
 

@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const authRoutes = require('./modules/auth/auth.routes');
 const lineaRoutes = require('./modules/linea/linea.routes');
+const clienteRoutes = require('./modules/cliente/cliente.routes');
 const protect = require('./middlewares/protect');
 const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 
 // Rutas protegidas (requieren JWT)
 app.use('/api/lineas', protect, lineaRoutes);
+app.use('/api/clientes', protect, clienteRoutes);
 
 // 404 + manejador central de errores (SIEMPRE los ultimos)
 app.use(notFound);

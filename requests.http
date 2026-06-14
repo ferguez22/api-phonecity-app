@@ -1,0 +1,107 @@
+### Variables ###
+@host = http://localhost:3000
+@usuario = phonecity
+@password = phonecity123.
+
+###############################################
+# 1. LOGIN  (pulsa "Send Request" AQUI primero)
+###############################################
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "{{usuario}}",
+  "password": "{{password}}"
+}
+
+###############################################
+# LINEAS
+###############################################
+
+### Health (publico)
+GET {{host}}/api/health
+
+### Listar todas
+GET {{host}}/api/lineas
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Filtrar + ordenar
+GET {{host}}/api/lineas?flujo=pieza&orderBy=fecha_entrada&order=asc
+Authorization: Bearer {{login.response.body.data.token}}
+
+### orderBy invalido -> 400
+GET {{host}}/api/lineas?orderBy=basura
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Sin token -> 401
+GET {{host}}/api/lineas
+
+### Ver una linea
+GET {{host}}/api/lineas/1
+Authorization: Bearer {{login.response.body.data.token}}
+
+###############################################
+# CLIENTES (1.2)
+###############################################
+
+### Listar clientes
+GET {{host}}/api/clientes
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Buscar cliente (nombre o telefono)
+GET {{host}}/api/clientes?q=Pepe
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Crear cliente
+POST {{host}}/api/clientes
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "nombre": "Pepe Jimenez",
+  "telefono": "653796129"
+}
+
+### Crear cliente con telefono repetido -> 409
+POST {{host}}/api/clientes
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "nombre": "Otro Pepe",
+  "telefono": "653796129"
+}
+
+### Editar cliente
+PUT {{host}}/api/clientes/1
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "nombre": "Pepe Jimenez Corregido"
+}
+
+### Borrar cliente (409 si tiene reparaciones)
+DELETE {{host}}/api/clientes/1
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Crear linea PARA ese cliente (comprueba el JOIN)
+POST {{host}}/api/lineas
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "tienda_id": 1,
+  "flujo": "reparacion",
+  "fase": "entregado",
+  "modelo": "Redmi 13C",
+  "problema_o_pieza": "Pantalla",
+  "importe": 50,
+  "fecha_entrada": "2026-01-20",
+  "cliente_id": 3
+}
+
+### Listar lineas -> ahora trae cliente_nombre y cliente_telefono
+GET {{host}}/api/lineas
+Authorization: Bearer {{login.response.body.data.token}}
