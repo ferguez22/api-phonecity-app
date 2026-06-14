@@ -1,5 +1,6 @@
 const AppError = require('../../utils/AppError');
 const repo = require('./linea.repository');
+const credencialesRepo = require('../credenciales/credenciales.repository');
 
 // Whitelist de ESCRITURA: solo estos campos pueden guardarse desde la API.
 const ALLOWED_FIELDS = [
@@ -75,6 +76,27 @@ function buildFilters(query) {
   return filters;
 }
 
+// Traduce errores de clave foranea de MariaDB a un 400 legible
+function handleFkError(err) {
+  if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_NO_REFERENCED_ROW') {
+    const msg = String(err.sqlMessage || '');
+    if (msg.includes('fk_linea_cliente')) {
+      return new AppError('El cliente indicado no existe', 400);
+    }
+    if (msg.includes('fk_linea_proveedor')) {
+      return new AppError('El proveedor indicado no existe', 400);
+    }
+    if (msg.includes('fk_linea_origen')) {
+      return new AppError('La linea de origen (garantia) no existe', 400);
+    }
+    if (msg.includes('fk_linea_tienda')) {
+      return new AppError('La tienda indicada no existe', 400);
+    }
+    return new AppError('Referencia invalida (clave foranea)', 400);
+  }
+  return err;
+}
+
 async function list(query = {}) {
   const filters = buildFilters(query);
 
@@ -109,8 +131,12 @@ async function create(payload) {
   if (missing.length > 0) {
     throw new AppError(`Campos obligatorios: ${missing.join(', ')}`, 400);
   }
-  const id = await repo.create(data);
-  return repo.findById(id);
+  try {
+    const id = await repo.create(data);
+    return repo.findById(id);
+  } catch (err) {
+    throw handleFkError(err);
+  }
 }
 
 async function update(id, payload) {
@@ -119,8 +145,21 @@ async function update(id, payload) {
   if (Object.keys(data).length === 0) {
     throw new AppError('No hay campos validos para actualizar', 400);
   }
-  await repo.update(id, data);
-  return repo.findById(id);
+  try {
+    await repo.update(id, data);
+  } catch (err) {
+    throw handleFkError(err);
+  }
+
+  // RGPD: al pasar la linea a 'entregado' se borran las credenciales sensibles
+  let credenciales_borradas = false;
+  if (data.fase === 'entregado') {
+    const affected = await credencialesRepo.remove(id);
+    credenciales_borradas = affected > 0;
+  }
+
+  const linea = await repo.findById(id);
+  return { ...linea, credenciales_borradas };
 }
 
 async function remove(id) {

@@ -1,6 +1,8 @@
 ### Variables ###
 @host = http://localhost:3000
+
 @usuario = phonecity
+
 @password = phonecity123.
 
 ###############################################
@@ -14,6 +16,11 @@ Content-Type: application/json
   "nombre_usuario": "{{usuario}}",
   "password": "{{password}}"
 }
+
+
+
+
+
 
 ###############################################
 # LINEAS
@@ -41,6 +48,11 @@ GET {{host}}/api/lineas
 GET {{host}}/api/lineas/1
 Authorization: Bearer {{login.response.body.data.token}}
 
+
+
+
+
+
 ###############################################
 # CLIENTES (1.2)
 ###############################################
@@ -59,8 +71,8 @@ Authorization: Bearer {{login.response.body.data.token}}
 Content-Type: application/json
 
 {
-  "nombre": "Pepe Jimenez",
-  "telefono": "653796129"
+  "nombre": "Alejandro Jando",
+  "telefono": "623565777"
 }
 
 ### Crear cliente con telefono repetido -> 409
@@ -95,13 +107,57 @@ Content-Type: application/json
   "tienda_id": 1,
   "flujo": "reparacion",
   "fase": "entregado",
-  "modelo": "Redmi 13C",
-  "problema_o_pieza": "Pantalla",
+  "modelo": "iPhone 15 Pro",
+  "problema_o_pieza": "Tapa Trasera",
   "importe": 50,
   "fecha_entrada": "2026-01-20",
-  "cliente_id": 3
+  "cliente_id": 4
 }
 
 ### Listar lineas -> ahora trae cliente_nombre y cliente_telefono
 GET {{host}}/api/lineas
 Authorization: Bearer {{login.response.body.data.token}}
+
+
+
+
+
+
+
+
+###############################################
+# CREDENCIALES (1.3) — anidadas bajo la linea
+###############################################
+
+### Ver credenciales de una linea (404 si no tiene)
+GET {{host}}/api/lineas/1/credenciales
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Crear/actualizar credenciales (upsert)
+PUT {{host}}/api/lineas/1/credenciales
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "pin_sim": "1234",
+  "codigo_desbloqueo": "patron L invertida",
+  "correos_google": "cliente@gmail.com",
+  "password_recuperacion": "recupera123"
+}
+
+### Volver a ver -> ahora existen
+GET {{host}}/api/lineas/1/credenciales
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Borrar credenciales manualmente
+DELETE {{host}}/api/lineas/1/credenciales
+Authorization: Bearer {{login.response.body.data.token}}
+
+### RGPD: entregar la linea -> respuesta trae credenciales_borradas:true
+PUT {{host}}/api/lineas/1
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "fase": "entregado"
+}
