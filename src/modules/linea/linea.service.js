@@ -1,6 +1,7 @@
 const AppError = require('../../utils/AppError');
 const repo = require('./linea.repository');
 const credencialesRepo = require('../credenciales/credenciales.repository');
+const historialRepo = require('../historial/historial.repository');
 
 // Whitelist de ESCRITURA: solo estos campos pueden guardarse desde la API.
 const ALLOWED_FIELDS = [
@@ -131,16 +132,27 @@ async function create(payload) {
   if (missing.length > 0) {
     throw new AppError(`Campos obligatorios: ${missing.join(', ')}`, 400);
   }
+  let id;
   try {
-    const id = await repo.create(data);
-    return repo.findById(id);
+    id = await repo.create(data);
   } catch (err) {
     throw handleFkError(err);
   }
+
+  const linea = await repo.findById(id);
+
+  // Historial: registra el estado inicial de la linea
+  await historialRepo.log(id, {
+    fase: linea.fase,
+    avisado: linea.avisado,
+    movil_en_tienda: linea.movil_en_tienda,
+  });
+
+  return linea;
 }
 
 async function update(id, payload) {
-  await get(id); // lanza 404 si no existe
+  const previa = await get(id); // estado previo (lanza 404 si no existe)
   const data = pick(payload);
   if (Object.keys(data).length === 0) {
     throw new AppError('No hay campos validos para actualizar', 400);
@@ -159,6 +171,20 @@ async function update(id, payload) {
   }
 
   const linea = await repo.findById(id);
+
+  // Historial: registra una foto si cambio fase, avisado o movil_en_tienda
+  const cambio =
+    linea.fase !== previa.fase ||
+    linea.avisado !== previa.avisado ||
+    linea.movil_en_tienda !== previa.movil_en_tienda;
+  if (cambio) {
+    await historialRepo.log(id, {
+      fase: linea.fase,
+      avisado: linea.avisado,
+      movil_en_tienda: linea.movil_en_tienda,
+    });
+  }
+
   return { ...linea, credenciales_borradas };
 }
 
