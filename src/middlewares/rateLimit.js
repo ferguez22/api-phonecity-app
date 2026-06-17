@@ -1,6 +1,6 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
-const cfKey = (req) => req.headers['cf-connecting-ip'] || req.ip;
+const cfKey = (req) => ipKeyGenerator(req.headers['cf-connecting-ip'] || req.ip);
 
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
