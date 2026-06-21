@@ -8,6 +8,7 @@ const notFound = require('./middlewares/notFound');
 const errorHandler = require('./middlewares/errorHandler');
 const { generalLimiter, loginLimiter } = require('./middlewares/rateLimit');
 const exportRoutes = require('./modules/export/export.routes');
+const importRoutes = require('./modules/import/import.routes');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(cors());
 app.use(generalLimiter);
 app.use(express.json({ limit: '1mb' }));
 app.use('/api/export', exportRoutes);
+app.use('/api/import', importRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' }, error: null });
