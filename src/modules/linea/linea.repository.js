@@ -1,12 +1,15 @@
 const pool = require('../../config/db');
 
 const SELECT_LINEA =
-  'SELECT l.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono ' +
-  'FROM linea l LEFT JOIN cliente c ON c.id = l.cliente_id';
+  'SELECT l.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
+  'p.nombre AS proveedor_nombre ' +
+  'FROM linea l ' +
+  'LEFT JOIN cliente c ON c.id = l.cliente_id ' +
+  'LEFT JOIN proveedor p ON p.id = l.proveedor_id';
 
 async function findAll(filters = {}, orderByExpr = 'l.id', orderDir = 'ASC') {
   const clauses = [];
-  const values  = [];
+  const values = [];
   for (const [column, value] of Object.entries(filters)) {
     if (value === null) {
       clauses.push(`l.${column} IS NULL`);
@@ -22,14 +25,7 @@ async function findAll(filters = {}, orderByExpr = 'l.id', orderDir = 'ASC') {
 }
 
 async function findMovilesEnTienda(orderByExpr = 'l.id', orderDir = 'ASC') {
-  const sql = `
-    ${SELECT_LINEA}
-    WHERE (
-      (l.flujo = 'reparacion' AND l.fase IN ('por_reparar','reparado','por_enviar_taller','no_reparable'))
-      OR (l.flujo = 'pieza' AND l.fase = 'por_pedir' AND l.movil_en_tienda = 1)
-    )
-    ORDER BY ${orderByExpr} ${orderDir}
-  `;
+  const sql = `${SELECT_LINEA} WHERE l.movil_en_tienda = 1 ORDER BY ${orderByExpr} ${orderDir}`;
   const [rows] = await pool.query(sql);
   return rows;
 }

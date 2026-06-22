@@ -104,18 +104,12 @@ async function update(id, payload) {
   if (Object.keys(data).length === 0) throw new AppError('No hay campos validos para actualizar', 400);
   try { await repo.update(id, data); } catch (err) { throw handleFkError(err); }
 
-  let credenciales_borradas = false;
-  if (data.fase === 'entregado') {
-    const affected = await credencialesRepo.remove(id);
-    credenciales_borradas = affected > 0;
-  }
-
   const linea = await repo.findById(id);
   const cambio = linea.fase !== previa.fase || linea.avisado !== previa.avisado || linea.movil_en_tienda !== previa.movil_en_tienda;
   if (cambio) {
     await historialRepo.log(id, { fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda });
   }
-  return { ...linea, credenciales_borradas };
+  return { ...linea};
 }
 
 async function remove(id) {
