@@ -1,6 +1,5 @@
 const AppError = require('../../utils/AppError');
 const repo = require('./linea.repository');
-const credencialesRepo = require('../credenciales/credenciales.repository');
 const historialRepo    = require('../historial/historial.repository');
 
 const ALLOWED_FIELDS = [

@@ -150,7 +150,7 @@ async function analyze(records) {
 }
 
 async function backupCurrent() {
-  const tablas = ['linea_historial', 'credenciales', 'linea', 'cliente'];
+  const tablas = ['linea_historial', 'linea', 'cliente'];
   for (const t of tablas) {
     await pool.query(`DROP TABLE IF EXISTS \`${t}_backup\``);
     await pool.query(`CREATE TABLE \`${t}_backup\` AS SELECT * FROM \`${t}\``);
@@ -165,7 +165,6 @@ async function executeImport(records) {
     await conn.beginTransaction();
 
     await conn.query('DELETE FROM linea_historial');
-    await conn.query('DELETE FROM credenciales');
     await conn.query('DELETE FROM linea');
     await conn.query('DELETE FROM cliente');
 
