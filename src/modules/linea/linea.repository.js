@@ -1,7 +1,10 @@
 const pool = require('../../config/db');
 
 const SELECT_LINEA =
-  'SELECT l.*, c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
+  'SELECT l.*, ' +
+  "DATE_FORMAT(l.fecha_entrada, '%Y-%m-%d') AS fecha_entrada, " +
+  "DATE_FORMAT(l.fecha_recogida_prevista, '%Y-%m-%dT%H:%i') AS fecha_recogida_prevista, " +
+  'c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
   'p.nombre AS proveedor_nombre ' +
   'FROM linea l ' +
   'LEFT JOIN cliente c ON c.id = l.cliente_id ' +
