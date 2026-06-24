@@ -91,7 +91,7 @@ async function processRows(records, opts) {
     }
 
     const m = mapEstado(estado);
-    const { flujo, fase, avisado, movil_en_tienda, subtipo } = m;
+    const { flujo, fase, avisado, movil_en_tienda, subtipo, taller } = m;
     let notas = (notasRaw || '').trim();
     if (m.fallback) {
       const prefijo = estado ? `[ESTADO DESCONOCIDO: ${estado}] ` : '[SIN ESTADO EN CSV] ';
@@ -120,12 +120,12 @@ async function processRows(records, opts) {
           `INSERT INTO linea
              (id, tienda_id, flujo, fase, avisado, movil_en_tienda,
               modelo, problema_o_pieza, notas, importe, tipo_cobro,
-              fecha_entrada, cliente_id, subtipo)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              fecha_entrada, cliente_id, subtipo, taller)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [
             lineNum, TIENDA_ID, flujo, fase, avisado ? 1 : 0, movil_en_tienda ? 1 : 0,
             modelo, problema, notasFinal, importe, tipoCobro,
-            fechaEntrada, clienteId, subtipo,
+            fechaEntrada, clienteId, subtipo, taller,
           ]
         );
         await conn.execute(

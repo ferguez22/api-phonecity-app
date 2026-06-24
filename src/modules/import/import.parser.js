@@ -2,13 +2,24 @@ function _n(s) {
   return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
 
+function _nEstado(s) {
+  return (s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[-–]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 const ESTADO_MAP_RAW = {
   'Finalizado': ['reparacion', 'entregado', false, false, null],
-  'Reparar': ['reparacion', 'por_reparar', false, false, null],
-  'Reparado - Avisado': ['reparacion', 'reparado', true, false, null],
-  'Enviar a taller': ['reparacion', 'por_enviar_taller', false, false, null],
-  'Enviado a taller': ['reparacion', 'en_taller', false, false, null],
-  'No se puede reparar': ['reparacion', 'no_reparable', false, false, null],
+  'Reparar': ['reparacion', 'por_reparar', false, true, null],
+  'Reparado - Avisado': ['reparacion', 'reparado', true, true, null],
+  'Enviar a taller Infotec': ['reparacion', 'por_enviar_taller', false, true, null, 'Infotec'],
+  'Enviar a taller Phonestorm': ['reparacion', 'por_enviar_taller', false, true, null, 'Phonestorm'],
+  'Enviado a taller Infotec': ['reparacion', 'en_taller', false, false, null, 'Infotec'],
+  'Enviado a taller Phonestorm': ['reparacion', 'en_taller', false, false, null, 'Phonestorm'],
+  'No se puede reparar - Avisado': ['reparacion', 'no_reparable', true, true, null],
   'No se puede reparar - Entregado': ['reparacion', 'no_reparable', true, false, null],
   'Cancelado': ['reparacion', 'cancelado', false, false, null],
   'Pedir pieza': ['pieza', 'por_pedir', false, false, null],
@@ -21,17 +32,12 @@ const ESTADO_MAP_RAW = {
   'Accesorio en tienda - Avisado': ['accesorio', 'en_tienda', true, false, null],
   'Venta de Dispositivo': ['venta', 'entregado', false, false, 'venta'],
   'Compra de Dispositivo': ['venta', 'entregado', false, false, 'compra'],
-  'Venta de Movil': ['venta', 'entregado', false, false, 'venta'],
-  'Venta de Movi': ['venta', 'entregado', false, false, 'venta'],
-  'Venta de Tablet': ['venta', 'entregado', false, false, 'venta'],
-  'Venta de Accesorio': ['venta', 'entregado', false, false, 'venta'],
-  'Venta de Bici': ['venta', 'entregado', false, false, 'venta'],
-  'Compra de Movil': ['venta', 'entregado', false, false, 'compra'],
 };
+
 
 const ESTADO_MAP = {};
 for (const [label, tuple] of Object.entries(ESTADO_MAP_RAW)) {
-  ESTADO_MAP[_n(label)] = tuple;
+  ESTADO_MAP[_nEstado(label)] = tuple;
 }
 
 const RE_DIA = /^(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)/i;
@@ -47,13 +53,13 @@ function esSeparador(estado) {
 function mapEstado(estado) {
   const e = (estado || '').trim();
   if (!e) {
-    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, fallback: true };
+    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, taller: null, fallback: true };
   }
-  const t = ESTADO_MAP[_n(e)];
+  const t = ESTADO_MAP[_nEstado(e)];
   if (!t) {
-    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, fallback: true };
+    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, taller: null, fallback: true };
   }
-  return { flujo: t[0], fase: t[1], avisado: t[2], movil_en_tienda: t[3], subtipo: t[4] || null, fallback: false };
+  return { flujo: t[0], fase: t[1], avisado: t[2], movil_en_tienda: t[3], subtipo: t[4] || null, taller: t[5] || null, fallback: false };
 }
 
 function parseFecha(raw) {
