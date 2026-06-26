@@ -10,7 +10,7 @@ function provLabel(nombre) {
 function tallerLabel(taller) {
   if (!taller) return null;
   const t = String(taller).toLowerCase();
-  if (t === 'phonestorm') return 'PhoneStorm';
+  if (t === 'phonestorm') return 'Phonestorm';
   if (t === 'infotec') return 'Infotec';
   return String(taller);
 }
@@ -30,32 +30,31 @@ function estadoLabel(row) {
     const prov = provLabel(row.proveedor_nombre);
     if (f === 'por_pedir') return prov ? `Pedir accesorio ${prov}` : 'Pedir Accesorio';
     if (f === 'pedido') return prov ? `Accesorio Pedido ${prov}` : 'Accesorio Pedido';
-    if (f === 'en_tienda') return prov ? `Accesorio en tienda Avisado ${prov}` : 'Accesorio en tienda - Avisado';
+    if (f === 'en_tienda') return prov ? `Accesorio en tienda - Avisado ${prov}` : 'Accesorio en tienda - Avisado';
     return '';
   }
 
   if (flujo === 'pieza') {
-    if (f === 'por_pedir') return movil ? 'Pedir Pieza Movil en tienda' : 'Pedir Pieza';
-    if (f === 'pedido') return movil ? 'Pieza pedida - Movil en tienda' : 'Pieza pedida';
-    if (f === 'en_tienda') return 'Pieza en tienda - avisado';
+    if (f === 'por_pedir') return movil ? 'Pedir Pieza - Móvil en tienda' : 'Pedir Pieza';
+    if (f === 'pedido') return movil ? 'Pieza pedida - Móvil en tienda' : 'Pieza pedida';
+    if (f === 'en_tienda') return 'Pieza en tienda - Avisado';
     return '';
   }
 
   if (flujo === 'reparacion') {
     if (f === 'por_reparar') return 'Reparar';
     if (f === 'reparado') return 'Reparado - Avisado';
-    if (f === 'no_reparable') return movil ? 'No se puede reparar - avisado' : 'No se puede Reparar - Entregado';
+    if (f === 'no_reparable') return movil ? 'No se Puede Reparar - Avisado' : 'No se Puede Reparar - Entregado';
     if (f === 'por_enviar_taller') {
       const t = tallerLabel(row.taller);
-      return t ? `Enviar a taller - ${t}` : 'Enviar a taller';
+      return t ? `Enviar a taller ${t}` : 'Enviar a taller';
     }
     if (f === 'en_taller') {
       const t = tallerLabel(row.taller);
-      return t ? `Enviado a taller - ${t}` : 'Enviado a taller';
+      return t ? `Enviado a taller ${t}` : 'Enviado a taller';
     }
     return '';
   }
-  return '';
 }
 
 function precioValue(row) {
