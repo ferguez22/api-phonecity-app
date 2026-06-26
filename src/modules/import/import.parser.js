@@ -27,9 +27,13 @@ const ESTADO_MAP_RAW = {
   'Pieza pedida': ['pieza', 'pedido', false, false, null],
   'Pieza pedida - Movil en tienda': ['pieza', 'pedido', false, true, null],
   'Pieza en tienda - Avisado': ['pieza', 'en_tienda', true, false, null],
-  'Pedir Accesorio': ['accesorio', 'por_pedir', false, false, null],
-  'Accesorio Pedido': ['accesorio', 'pedido', false, false, null],
-  'Accesorio en tienda - Avisado': ['accesorio', 'en_tienda', true, false, null],
+  'Pedir accesorio APOKIN': ['accesorio', 'por_pedir', false, false, null, null, 'Apokin'],
+  'Pedir accesorio WEPHONE': ['accesorio', 'por_pedir', false, false, null, null, 'Wephone'],
+  'Accesorio Pedido APOKIN': ['accesorio', 'pedido', false, false, null, null, 'Apokin'],
+  'Accesorio Pedido WEPHONE': ['accesorio', 'pedido', false, false, null, null, 'Wephone'],
+  'Accesorio en tienda - Avisado': ['accesorio', 'en_tienda', true, false, null, null],
+  'Accesorio en tienda Avisado APOKIN': ['accesorio', 'en_tienda', true, false, null, null, 'Apokin'],
+  'Accesorio en tienda Avisado WEPHONE': ['accesorio', 'en_tienda', true, false, null, null, 'Wephone'],
   'Venta de Dispositivo': ['venta', 'entregado', false, false, 'venta'],
   'Compra de Dispositivo': ['venta', 'entregado', false, false, 'compra'],
 };
@@ -52,14 +56,15 @@ function esSeparador(estado) {
 
 function mapEstado(estado) {
   const e = (estado || '').trim();
-  if (!e) {
-    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, taller: null, fallback: true };
-  }
+  const FB = { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, taller: null, proveedor: null, fallback: true };
+  if (!e) return FB;
   const t = ESTADO_MAP[_nEstado(e)];
-  if (!t) {
-    return { flujo: 'reparacion', fase: 'cancelado', avisado: false, movil_en_tienda: false, subtipo: null, taller: null, fallback: true };
-  }
-  return { flujo: t[0], fase: t[1], avisado: t[2], movil_en_tienda: t[3], subtipo: t[4] || null, taller: t[5] || null, fallback: false };
+  if (!t) return FB;
+  return {
+    flujo: t[0], fase: t[1], avisado: t[2], movil_en_tienda: t[3],
+    subtipo: t[4] || null, taller: t[5] || null, proveedor: t[6] || null,
+    fallback: false,
+  };
 }
 
 function parseFecha(raw) {

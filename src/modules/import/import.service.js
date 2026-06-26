@@ -24,6 +24,12 @@ async function processRows(records, opts) {
   const nombreCache = {};
   let fakeSeq = 0;
 
+  const provMap = {};
+  if (!dryRun) {
+    const [provs] = await conn.execute('SELECT id, nombre FROM proveedor');
+    for (const p of provs) provMap[p.nombre.toLowerCase()] = p.id;
+  }
+
   async function upsertCliente(nombreRaw, telRaw) {
     const nombre = (nombreRaw || '').trim();
     if (!nombre || nombre.toUpperCase() === 'TIENDA') return null;
@@ -91,8 +97,8 @@ async function processRows(records, opts) {
     }
 
     const m = mapEstado(estado);
-    const { flujo, fase, avisado, movil_en_tienda, subtipo, taller } = m;
-    let notas = (notasRaw || '').trim();
+    const { flujo, fase, avisado, movil_en_tienda, subtipo, taller, proveedor } = m;
+    const proveedorId = proveedor ? (provMap[proveedor.toLowerCase()] ?? null) : null;    let notas = (notasRaw || '').trim();
     if (m.fallback) {
       const prefijo = estado ? `[ESTADO DESCONOCIDO: ${estado}] ` : '[SIN ESTADO EN CSV] ';
       notas = prefijo + notas;
@@ -120,12 +126,12 @@ async function processRows(records, opts) {
           `INSERT INTO linea
              (id, tienda_id, flujo, fase, avisado, movil_en_tienda,
               modelo, problema_o_pieza, notas, importe, tipo_cobro,
-              fecha_entrada, cliente_id, subtipo, taller)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              fecha_entrada, cliente_id, subtipo, taller, proveedor_id)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [
             lineNum, TIENDA_ID, flujo, fase, avisado ? 1 : 0, movil_en_tienda ? 1 : 0,
             modelo, problema, notasFinal, importe, tipoCobro,
-            fechaEntrada, clienteId, subtipo, taller,
+            fechaEntrada, clienteId, subtipo, taller, proveedorId,
           ]
         );
         await conn.execute(
