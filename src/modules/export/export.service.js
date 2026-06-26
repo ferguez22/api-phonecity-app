@@ -1,6 +1,6 @@
 const pool = require('../../config/db');
 
-const SHEET_HEADERS = ['Estado', 'Fecha', 'Modelo', 'Nombre', 'Teléfono', 'Precio', 'Pieza', 'Notas'];
+const SHEET_HEADERS = ['Estado', 'Fecha Entrada', 'Modelo', 'Nombre', 'Telefono', 'Precio', 'Problema o Pieza', 'Notas'];
 
 function provLabel(nombre) {
   if (!nombre) return null;
