@@ -7,7 +7,7 @@ const ALLOWED_FIELDS = [
   'problema_o_pieza','notas','telefono_alternativo','codigo_dispositivo',
   'importe','tipo_cobro','fecha_entrada','fecha_pedido','fecha_recogida_prevista',
   'proveedor_id','taller','fecha_envio_taller','fecha_retorno_taller',
-  'cliente_id','linea_origen_id','subtipo',
+  'cliente_id','linea_origen_id','subtipo','fecha_ultimo_aviso',
 ];
 
 const REQUIRED_ON_CREATE = ['tienda_id','flujo','fase'];
@@ -23,6 +23,7 @@ const SORT_EXPRESSIONS = {
   id:                      'l.id',
   fecha_entrada:           'l.fecha_entrada',
   fecha_recogida_prevista: 'l.fecha_recogida_prevista',
+  fecha_ultimo_aviso:        'l.fecha_ultimo_aviso',
   dias_reparacion:         'DATEDIFF(CURDATE(), l.fecha_entrada)',
 };
 
