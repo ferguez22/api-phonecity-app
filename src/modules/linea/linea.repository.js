@@ -10,6 +10,8 @@ const SELECT_LINEA =
   'LEFT JOIN cliente c ON c.id = l.cliente_id ' +
   'LEFT JOIN proveedor p ON p.id = l.proveedor_id';
 
+const FASES_TIMER_EXCLUIDAS = ['reparado', 'no_reparable', 'entregado', 'cancelado', 'por_enviar_taller', 'en_taller'];
+
 async function findAll(filters = {}, orderByExpr = 'l.id', orderDir = 'ASC') {
   const clauses = [];
   const values = [];
@@ -33,6 +35,18 @@ async function findMovilesEnTienda(orderByExpr = 'l.id', orderDir = 'ASC') {
   return rows;
 }
 
+async function findTemporizadores(orderByExpr = 'l.fecha_recogida_prevista', orderDir = 'ASC') {
+  const placeholders = FASES_TIMER_EXCLUIDAS.map(() => '?').join(', ');
+  const sql =
+    `${SELECT_LINEA} ` +
+    `WHERE l.fecha_recogida_prevista IS NOT NULL ` +
+    `AND l.flujo = 'reparacion' ` +
+    `AND l.fase NOT IN (${placeholders}) ` +
+    `ORDER BY ${orderByExpr} ${orderDir}`;
+  const [rows] = await pool.query(sql, FASES_TIMER_EXCLUIDAS);
+  return rows;
+}
+
 async function findById(id) {
   const [rows] = await pool.query(`${SELECT_LINEA} WHERE l.id = ?`, [id]);
   return rows[0] || null;
@@ -53,4 +67,4 @@ async function remove(id) {
   return result.affectedRows;
 }
 
-module.exports = { findAll, findById, findMovilesEnTienda, create, update, remove };
+module.exports = { findAll, findById, findMovilesEnTienda, findTemporizadores, create, update, remove };

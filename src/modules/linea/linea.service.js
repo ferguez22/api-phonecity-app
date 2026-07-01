@@ -76,6 +76,10 @@ async function list(query = {}) {
     return repo.findMovilesEnTienda(orderByExpr, orderDir);
   }
 
+  if (query.vista === 'temporizadores') {
+    return repo.findTemporizadores('l.fecha_recogida_prevista', orderDir);
+  }
+
   const filters = buildFilters(query);
   return repo.findAll(filters, orderByExpr, orderDir);
 }
@@ -93,7 +97,10 @@ async function create(payload) {
   let id;
   try { id = await repo.create(data); } catch (err) { throw handleFkError(err); }
   const linea = await repo.findById(id);
-  await historialRepo.log(id, { fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda });
+  await historialRepo.log(id, {
+    fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda,
+    flujo: linea.flujo, subtipo: linea.subtipo, taller: linea.taller, proveedor_nombre: linea.proveedor_nombre,
+  });
   return linea;
 }
 
@@ -104,9 +111,19 @@ async function update(id, payload) {
   try { await repo.update(id, data); } catch (err) { throw handleFkError(err); }
 
   const linea = await repo.findById(id);
-  const cambio = linea.fase !== previa.fase || linea.avisado !== previa.avisado || linea.movil_en_tienda !== previa.movil_en_tienda;
+  const cambio =
+    linea.fase !== previa.fase ||
+    linea.avisado !== previa.avisado ||
+    linea.movil_en_tienda !== previa.movil_en_tienda ||
+    linea.flujo !== previa.flujo ||
+    linea.subtipo !== previa.subtipo ||
+    linea.taller !== previa.taller ||
+    linea.proveedor_id !== previa.proveedor_id;
   if (cambio) {
-    await historialRepo.log(id, { fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda });
+    await historialRepo.log(id, {
+      fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda,
+      flujo: linea.flujo, subtipo: linea.subtipo, taller: linea.taller, proveedor_nombre: linea.proveedor_nombre,
+    });
   }
   return { ...linea};
 }
