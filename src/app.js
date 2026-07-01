@@ -11,6 +11,7 @@ const exportRoutes = require('./modules/export/export.routes');
 const importRoutes = require('./modules/import/import.routes');
 const proveedorRoutes = require('./modules/proveedor/proveedor.routes'); 
 const pedidosRoutes = require('./modules/pedidos/pedidos.routes');
+const tallerRoutes = require('./modules/taller/taller.routes');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' }, error: null });
 });
 app.use('/api/pedidos', protect, pedidosRoutes);
+app.use('/api/taller', protect, tallerRoutes);
 
 app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/lineas', protect, lineaRoutes);
