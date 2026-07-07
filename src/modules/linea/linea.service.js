@@ -82,6 +82,15 @@ async function list(query = {}) {
   }
 
   const filters = buildFilters(query);
+
+  const incluirHistorial = query.incluir_historial === 'true' || query.incluir_historial === '1';
+  if (incluirHistorial && filters.flujo) {
+    const fases = query.fases_historial
+      ? String(query.fases_historial).split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+    return repo.findAllConHistorial(filters, fases, orderByExpr, orderDir);
+  }
+
   return repo.findAll(filters, orderByExpr, orderDir);
 }
 
@@ -102,6 +111,7 @@ async function create(payload) {
     fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda,
     flujo: linea.flujo, subtipo: linea.subtipo, taller: linea.taller, proveedor_nombre: linea.proveedor_nombre,
   });
+  await repo.registrarFlujo(id, linea.flujo, linea.fase);
   return linea;
 }
 
@@ -125,6 +135,7 @@ async function update(id, payload) {
       fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda,
       flujo: linea.flujo, subtipo: linea.subtipo, taller: linea.taller, proveedor_nombre: linea.proveedor_nombre,
     });
+    await repo.registrarFlujo(id, linea.flujo, linea.fase);
   }
   return { ...linea};
 }

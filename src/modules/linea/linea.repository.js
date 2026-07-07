@@ -48,6 +48,53 @@ async function findTemporizadores(orderByExpr = 'l.fecha_recogida_prevista', ord
   return rows;
 }
 
+async function findAllConHistorial(filters = {}, fasesHistorial = [], orderByExpr = 'l.id', orderDir = 'ASC') {
+  const clauses = [];
+  const values = [];
+  for (const [column, value] of Object.entries(filters)) {
+    if (value === null) {
+      clauses.push(`l.${column} IS NULL`);
+    } else {
+      clauses.push(`l.${column} = ?`);
+      values.push(value);
+    }
+  }
+  const actual =
+    clauses.length > 0
+      ? `(${clauses.join(' AND ')} AND l.fase NOT IN ('entregado','cancelado'))`
+      : `l.fase NOT IN ('entregado','cancelado')`;
+
+  let histCond = 'lf.linea_id = l.id AND lf.flujo = ?';
+  const histValues = [filters.flujo];
+  if (fasesHistorial.length > 0) {
+    const ph = fasesHistorial.map(() => '?').join(', ');
+    histCond += ` AND lf.fase IN (${ph})`;
+    histValues.push(...fasesHistorial);
+  }
+  const matchHist = `EXISTS (SELECT 1 FROM linea_flujos lf WHERE ${histCond})`;
+
+  const selectConFlag = SELECT_LINEA.replace(
+    'SELECT l.*, ',
+    `SELECT l.*, CASE WHEN l.fase IN ('entregado','cancelado') THEN 1 ELSE 0 END AS es_historico, `
+  );
+
+  const sql =
+    `${selectConFlag} ` +
+    `WHERE ${actual} ` +
+    `OR (l.fase IN ('entregado','cancelado') AND ${matchHist}) ` +
+    `ORDER BY ${orderByExpr} ${orderDir}`;
+
+  const [rows] = await pool.query(sql, [...values, ...histValues]);
+  return rows;
+}
+
+async function registrarFlujo(lineaId, flujo, fase) {
+  await pool.query(
+    'INSERT IGNORE INTO linea_flujos (linea_id, flujo, fase) VALUES (?, ?, ?)',
+    [lineaId, flujo, fase]
+  );
+}
+
 async function findById(id) {
   const [rows] = await pool.query(`${SELECT_LINEA} WHERE l.id = ?`, [id]);
   return rows[0] || null;
@@ -68,4 +115,4 @@ async function remove(id) {
   return result.affectedRows;
 }
 
-module.exports = { findAll, findById, findMovilesEnTienda, findTemporizadores, create, update, remove };
+module.exports = { findAll, findAllConHistorial, registrarFlujo, findById, findMovilesEnTienda, findTemporizadores, create, update, remove };
