@@ -150,3 +150,62 @@ Content-Type: application/json
 ### Ver la linea de tiempo de una linea
 GET {{host}}/api/lineas/15/historial
 Authorization: Bearer {{login.response.body.data.token}}
+
+
+
+###############################################
+# NOTAS (fase 1)
+###############################################
+
+### Listar notas (solo pendientes)
+GET {{host}}/api/notas
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Listar notas (incluye resueltas)
+GET {{host}}/api/notas?incluir_resueltas=true
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Crear nota
+POST {{host}}/api/notas
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "texto": "Avisar a cliente del cargador"
+}
+
+### Editar texto de nota
+PUT {{host}}/api/notas/2
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "texto": "Avisar a cliente del cargador iPhone 14"
+}
+
+### Resolver nota
+PUT {{host}}/api/notas/2
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "resuelto": true
+}
+
+### Reabrir nota
+PUT {{host}}/api/notas/2
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "resuelto": false
+}
+
+### Texto vacio -> 400
+POST {{host}}/api/notas
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "texto": "   "
+}

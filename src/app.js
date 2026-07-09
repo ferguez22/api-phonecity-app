@@ -12,6 +12,7 @@ const importRoutes = require('./modules/import/import.routes');
 const proveedorRoutes = require('./modules/proveedor/proveedor.routes'); 
 const pedidosRoutes = require('./modules/pedidos/pedidos.routes');
 const tallerRoutes = require('./modules/taller/taller.routes');
+const notaRoutes = require('./modules/nota/nota.routes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/taller', protect, tallerRoutes);
 app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/lineas', protect, lineaRoutes);
 app.use('/api/clientes', protect, clienteRoutes);
+app.use('/api/notas', protect, notaRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

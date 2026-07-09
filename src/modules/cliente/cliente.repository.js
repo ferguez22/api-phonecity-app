@@ -1,17 +1,23 @@
 const pool = require('../../config/db');
 
-// SOLO SQL de la tabla cliente.
+const SELECT_CLIENTE_STATS =
+  'SELECT c.id, c.nombre, c.telefono, ' +
+  'COUNT(l.id) AS num_lineas, ' +
+  "DATE_FORMAT(MIN(l.fecha_entrada), '%Y-%m-%d') AS primera_visita " +
+  'FROM cliente c ' +
+  'LEFT JOIN linea l ON l.cliente_id = c.id';
+
 
 async function findAll(search) {
   if (search) {
     const like = `%${search}%`;
     const [rows] = await pool.query(
-      'SELECT * FROM cliente WHERE nombre LIKE ? OR telefono LIKE ? ORDER BY nombre',
+      `${SELECT_CLIENTE_STATS} WHERE c.nombre LIKE ? OR c.telefono LIKE ? GROUP BY c.id ORDER BY c.nombre`,
       [like, like],
     );
     return rows;
   }
-  const [rows] = await pool.query('SELECT * FROM cliente ORDER BY nombre');
+  const [rows] = await pool.query(`${SELECT_CLIENTE_STATS} GROUP BY c.id ORDER BY c.nombre`);
   return rows;
 }
 
