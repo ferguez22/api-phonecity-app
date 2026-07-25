@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { frontendUrl } = require('./config/env');
 const authRoutes = require('./modules/auth/auth.routes');
 const lineaRoutes = require('./modules/linea/linea.routes');
 const clienteRoutes = require('./modules/cliente/cliente.routes');
@@ -18,7 +19,7 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-app.use(cors());
+app.use(cors({ origin: frontendUrl, credentials: true }));
 app.use(generalLimiter);
 app.use(express.json({ limit: '1mb' }));
 app.use('/api/export', exportRoutes);

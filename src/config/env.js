@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Variables obligatorias: si falta alguna, la app NO arranca (fallo temprano)
-const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME', 'PORT', 'JWT_SECRET'];
+const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME', 'PORT', 'JWT_SECRET', 'FRONTEND_URL'];
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length > 0) {
@@ -24,4 +24,5 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+  frontendUrl: process.env.FRONTEND_URL,
 };
