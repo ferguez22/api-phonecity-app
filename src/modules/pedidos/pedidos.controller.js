@@ -7,7 +7,7 @@ const pendientes = asyncHandler(async (req, res) => {
 });
 
 const marcarPedido = asyncHandler(async (req, res) => {
-  const data = await service.marcarPedido(req.body?.ids);
+  const data = await service.marcarPedido(req.body?.grupo);
   res.json({ success: true, data, error: null });
 });
 
