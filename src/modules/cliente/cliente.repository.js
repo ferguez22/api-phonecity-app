@@ -8,9 +8,27 @@ const SELECT_CLIENTE_STATS =
   'LEFT JOIN linea l ON l.cliente_id = c.id';
 
 
+const TELEFONO_LIMPIO =
+  "REPLACE(REPLACE(REPLACE(REPLACE(c.telefono, ' ', ''), '-', ''), '.', ''), '+', '')";
+
+function soloDigitos(texto) {
+  return String(texto).replace(/\D/g, '');
+}
+
 async function findAll(search) {
   if (search) {
     const like = `%${search}%`;
+    const digitos = soloDigitos(search);
+
+    if (digitos.length >= 3) {
+      const likeDigitos = `%${digitos}%`;
+      const [rows] = await pool.query(
+        `${SELECT_CLIENTE_STATS} WHERE c.nombre LIKE ? OR ${TELEFONO_LIMPIO} LIKE ? GROUP BY c.id ORDER BY c.nombre`,
+        [like, likeDigitos],
+      );
+      return rows;
+    }
+
     const [rows] = await pool.query(
       `${SELECT_CLIENTE_STATS} WHERE c.nombre LIKE ? OR c.telefono LIKE ? GROUP BY c.id ORDER BY c.nombre`,
       [like, like],

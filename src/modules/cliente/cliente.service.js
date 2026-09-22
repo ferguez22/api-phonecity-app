@@ -4,18 +4,27 @@ const repo = require('./cliente.repository');
 const ALLOWED_FIELDS = ['nombre', 'telefono'];
 const REQUIRED_ON_CREATE = ['nombre'];
 
+function normalizarTelefono(valor) {
+  if (valor === undefined) return undefined;
+  if (valor === null) return null;
+  const limpio = String(valor).trim();
+  return limpio === '' ? null : limpio;
+}
+
 function pick(payload) {
   const out = {};
   for (const key of ALLOWED_FIELDS) {
     if (payload[key] !== undefined) out[key] = payload[key];
   }
+  if (out.telefono !== undefined) out.telefono = normalizarTelefono(out.telefono);
+  if (typeof out.nombre === 'string') out.nombre = out.nombre.trim();
   return out;
 }
 
 // Traduce el error de telefono duplicado de MariaDB a un 409 claro
 function handleDuplicate(err, telefono) {
   if (err.code === 'ER_DUP_ENTRY') {
-    return new AppError(`Ya existe un cliente con el telefono ${telefono}`, 409);
+    return new AppError(`Ya existe un cliente con el telefono ${telefono ?? ''}`.trim(), 409);
   }
   return err;
 }
