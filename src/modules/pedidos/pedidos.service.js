@@ -56,14 +56,15 @@ async function pendientes() {
   for (const g of ORDEN_GRUPOS) {
     const { titulo, where, params } = GRUPOS[g];
     const [rows] = await pool.query(
-      `SELECT l.modelo, l.problema_o_pieza
+      `SELECT l.id, l.modelo, p.descripcion AS problema_o_pieza
          FROM linea l
+         LEFT JOIN linea_pieza p ON p.linea_id = l.id
         WHERE ${where}
-        ORDER BY l.id ASC`,
+        ORDER BY l.id ASC, p.orden ASC, p.id ASC`,
       params
     );
     bloques[g] = construirTexto(titulo, agrupar(rows));
-    conteos[g] = rows.length;
+    conteos[g] = new Set(rows.map((r) => r.id)).size;
   }
 
   return { bloques, conteos };

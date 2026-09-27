@@ -1,11 +1,12 @@
 const pool = require('../../config/db');
+const piezaRepo = require('../pieza/pieza.repository');
 
 const SELECT_LINEA =
   'SELECT l.*, ' +
   "DATE_FORMAT(l.fecha_entrada, '%Y-%m-%d') AS fecha_entrada, " +
 "DATE_FORMAT(l.fecha_recogida_prevista, '%Y-%m-%dT%H:%i') AS fecha_recogida_prevista, " +
   "DATE_FORMAT(l.fecha_ultimo_aviso, '%Y-%m-%dT%H:%i') AS fecha_ultimo_aviso, " +
-  'c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +  'c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
+  'c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
   'p.nombre AS proveedor_nombre ' +
   'FROM linea l ' +
   'LEFT JOIN cliente c ON c.id = l.cliente_id ' +
@@ -97,7 +98,10 @@ async function registrarFlujo(lineaId, flujo, fase) {
 
 async function findById(id) {
   const [rows] = await pool.query(`${SELECT_LINEA} WHERE l.id = ?`, [id]);
-  return rows[0] || null;
+  const linea = rows[0] || null;
+  if (!linea) return null;
+  linea.piezas = await piezaRepo.findByLinea(id);
+  return linea;
 }
 
 async function create(data) {

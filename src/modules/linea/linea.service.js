@@ -1,6 +1,7 @@
 const AppError = require('../../utils/AppError');
 const repo = require('./linea.repository');
-const historialRepo    = require('../historial/historial.repository');
+const historialRepo = require('../historial/historial.repository');
+const piezaService     = require('../pieza/pieza.service');
 
 const ALLOWED_FIELDS = [
   'tienda_id','flujo','fase','avisado','movil_en_tienda','modelo',
@@ -106,6 +107,13 @@ async function create(payload) {
   if (missing.length > 0) throw new AppError(`Campos obligatorios: ${missing.join(', ')}`, 400);
   let id;
   try { id = await repo.create(data); } catch (err) { throw handleFkError(err); }
+
+  const piezas = Array.isArray(payload.piezas)
+    ? payload.piezas
+    : piezaService.desdeCamposAntiguos(data.problema_o_pieza, data.importe);
+  const calculados = await piezaService.reemplazar(id, piezas);
+  await repo.update(id, calculados);
+
   const linea = await repo.findById(id);
   await historialRepo.log(id, {
     fase: linea.fase, avisado: linea.avisado, movil_en_tienda: linea.movil_en_tienda,
@@ -118,8 +126,25 @@ async function create(payload) {
 async function update(id, payload) {
   const previa = await get(id);
   const data   = pick(payload);
-  if (Object.keys(data).length === 0) throw new AppError('No hay campos validos para actualizar', 400);
-  try { await repo.update(id, data); } catch (err) { throw handleFkError(err); }
+  const traePiezas = Array.isArray(payload.piezas);
+  if (Object.keys(data).length === 0 && !traePiezas) {
+    throw new AppError('No hay campos validos para actualizar', 400);
+  }
+  if (Object.keys(data).length > 0) {
+    try { await repo.update(id, data); } catch (err) { throw handleFkError(err); }
+  }
+
+  const tocaCamposAntiguos =
+    data.problema_o_pieza !== undefined || data.importe !== undefined;
+
+  if (traePiezas) {
+    const calculados = await piezaService.reemplazar(id, payload.piezas);
+    await repo.update(id, calculados);
+  } else if (tocaCamposAntiguos) {
+    const actual = await repo.findById(id);
+    const piezas = piezaService.desdeCamposAntiguos(actual.problema_o_pieza, actual.importe);
+    await piezaService.reemplazar(id, piezas);
+  }
 
   const linea = await repo.findById(id);
   const cambio =
