@@ -7,7 +7,8 @@ const SELECT_LINEA =
 "DATE_FORMAT(l.fecha_recogida_prevista, '%Y-%m-%dT%H:%i') AS fecha_recogida_prevista, " +
   "DATE_FORMAT(l.fecha_ultimo_aviso, '%Y-%m-%dT%H:%i') AS fecha_ultimo_aviso, " +
   'c.nombre AS cliente_nombre, c.telefono AS cliente_telefono, ' +
-  'p.nombre AS proveedor_nombre ' +
+  'p.nombre AS proveedor_nombre, ' +
+  '(SELECT COUNT(*) FROM linea_pieza lp WHERE lp.linea_id = l.id) AS num_piezas ' +
   'FROM linea l ' +
   'LEFT JOIN cliente c ON c.id = l.cliente_id ' +
   'LEFT JOIN proveedor p ON p.id = l.proveedor_id';
