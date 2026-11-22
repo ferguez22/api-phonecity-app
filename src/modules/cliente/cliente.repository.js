@@ -16,22 +16,31 @@ function soloDigitos(texto) {
 }
 
 async function findAll(search) {
-  if (search) {
-    const like = `%${search}%`;
-    const digitos = soloDigitos(search);
+  const compacto = search ? String(search).replace(/\s+/g, '') : '';
+  const terminos = /^\d{3,}$/.test(compacto)
+    ? [compacto]
+    : compacto
+      ? String(search).split(/\s+/).filter(Boolean)
+      : [];
+  if (terminos.length > 0) {
+    const condiciones = [];
+    const params = [];
 
-    if (digitos.length >= 3) {
-      const likeDigitos = `%${digitos}%`;
-      const [rows] = await pool.query(
-        `${SELECT_CLIENTE_STATS} WHERE c.nombre LIKE ? OR ${TELEFONO_LIMPIO} LIKE ? GROUP BY c.id ORDER BY c.nombre`,
-        [like, likeDigitos],
-      );
-      return rows;
+    for (const termino of terminos) {
+      const like = `%${termino}%`;
+      const digitos = soloDigitos(termino);
+      if (digitos.length >= 3) {
+        condiciones.push(`(c.nombre LIKE ? OR ${TELEFONO_LIMPIO} LIKE ?)`);
+        params.push(like, `%${digitos}%`);
+      } else {
+        condiciones.push('(c.nombre LIKE ? OR c.telefono LIKE ?)');
+        params.push(like, like);
+      }
     }
 
     const [rows] = await pool.query(
-      `${SELECT_CLIENTE_STATS} WHERE c.nombre LIKE ? OR c.telefono LIKE ? GROUP BY c.id ORDER BY c.nombre`,
-      [like, like],
+      `${SELECT_CLIENTE_STATS} WHERE ${condiciones.join(' AND ')} GROUP BY c.id ORDER BY c.nombre`,
+      params,
     );
     return rows;
   }
