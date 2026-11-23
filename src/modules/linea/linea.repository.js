@@ -33,7 +33,13 @@ async function findAll(filters = {}, orderByExpr = 'l.id', orderDir = 'ASC') {
 }
 
 async function findMovilesEnTienda(orderByExpr = 'l.id', orderDir = 'ASC') {
-  const sql = `${SELECT_LINEA} WHERE l.movil_en_tienda = 1 ORDER BY ${orderByExpr} ${orderDir}`;
+  const selectConPrimerAviso = SELECT_LINEA.replace(
+    'SELECT l.*, ',
+    'SELECT l.*, ' +
+      "(SELECT DATE_FORMAT(MIN(h.fecha), '%Y-%m-%dT%H:%i') FROM linea_historial h " +
+      'WHERE h.linea_id = l.id AND h.fase = l.fase AND h.avisado = 1) AS fecha_primer_aviso, ',
+  );
+  const sql = `${selectConPrimerAviso} WHERE l.movil_en_tienda = 1 ORDER BY ${orderByExpr} ${orderDir}`;
   const [rows] = await pool.query(sql);
   return rows;
 }
