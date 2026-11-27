@@ -14,6 +14,8 @@ const proveedorRoutes = require('./modules/proveedor/proveedor.routes');
 const pedidosRoutes = require('./modules/pedidos/pedidos.routes');
 const tallerRoutes = require('./modules/taller/taller.routes');
 const notaRoutes = require('./modules/nota/nota.routes');
+const modeloRoutes = require('./modules/modelo/modelo.routes');
+const requireRole = require('./middlewares/requireRole');
 
 const app = express();
 
@@ -35,6 +37,7 @@ app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api/lineas', protect, lineaRoutes);
 app.use('/api/clientes', protect, clienteRoutes);
 app.use('/api/notas', protect, notaRoutes);
+app.use('/api/modelos', protect, requireRole('admin'), modeloRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
