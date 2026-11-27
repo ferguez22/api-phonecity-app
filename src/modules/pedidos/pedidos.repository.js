@@ -38,4 +38,4 @@ async function findPedidosEnRango(clasif, params, desde, hasta) {
   return rows;
 }
 
-module.exports = { findPedidosEnRango };
+module.exports = { findPedidosEnRango, SQL_TS_IMPORTACION };

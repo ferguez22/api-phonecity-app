@@ -16,6 +16,7 @@ const tallerRoutes = require('./modules/taller/taller.routes');
 const notaRoutes = require('./modules/nota/nota.routes');
 const modeloRoutes = require('./modules/modelo/modelo.routes');
 const requireRole = require('./middlewares/requireRole');
+const estadisticasRoutes = require('./modules/estadisticas/estadisticas.routes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/lineas', protect, lineaRoutes);
 app.use('/api/clientes', protect, clienteRoutes);
 app.use('/api/notas', protect, notaRoutes);
 app.use('/api/modelos', protect, requireRole('admin'), modeloRoutes);
+app.use('/api/estadisticas', protect, requireRole('admin'), estadisticasRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
