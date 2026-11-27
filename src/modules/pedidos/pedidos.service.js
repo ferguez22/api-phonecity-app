@@ -6,22 +6,24 @@ const PROV_WEPHONE = 1;
 const PROV_APOKIN = 2;
 const TIENDA = '319';
 
-function grupo(titulo, clasif, params) {
-  return { titulo, clasif, params, where: `l.fase = 'por_pedir' AND ${clasif}` };
+function grupo(titulo, clasif, params, clasifHistorial) {
+  return { titulo, clasif, params, clasifHistorial, where: `l.fase = 'por_pedir' AND ${clasif}` };
 }
 
 const GRUPOS = {
   wephone: grupo(
     `Pedido Wephone Infotec ${TIENDA}`,
     `l.flujo = 'accesorio' AND l.proveedor_id = ?`,
-    [PROV_WEPHONE]
+    [PROV_WEPHONE],
+    `e.flujo = 'accesorio' AND e.proveedor_id = ?`
   ),
   apokin: grupo(
     `Pedido Apokin ${TIENDA}`,
     `l.flujo = 'accesorio' AND l.proveedor_id = ?`,
-    [PROV_APOKIN]
+    [PROV_APOKIN],
+    `e.flujo = 'accesorio' AND e.proveedor_id = ?`
   ),
-  piezas: grupo(`Pedido ${TIENDA}`, `l.flujo = 'pieza'`, []),
+  piezas: grupo(`Pedido ${TIENDA}`, `l.flujo = 'pieza'`, [], `e.flujo = 'pieza'`),
 };
 
 const ORDEN_GRUPOS = ['wephone', 'apokin', 'piezas'];
@@ -165,8 +167,8 @@ async function historialDias(query = {}) {
 
   const dias = {};
   for (const g of ORDEN_GRUPOS) {
-    const { clasif, params } = GRUPOS[g];
-    const rows = await repo.findPedidosEnRango(clasif, params, desde, hasta);
+    const { clasifHistorial, params } = GRUPOS[g];
+    const rows = await repo.findPedidosEnRango(clasifHistorial, params, desde, hasta);
 
     const porFecha = {};
     for (const r of rows) (porFecha[r.fecha] ||= []).push(r);
@@ -190,8 +192,8 @@ async function historialDia(fecha) {
   const filas = {};
 
   for (const g of ORDEN_GRUPOS) {
-    const { titulo, clasif, params } = GRUPOS[g];
-    const map = agrupar(await repo.findPedidosEnRango(clasif, params, dia, dia));
+    const { titulo, clasifHistorial, params } = GRUPOS[g];
+    const map = agrupar(await repo.findPedidosEnRango(clasifHistorial, params, dia, dia));
     filas[g] = ordenar(map).map(([descripcion, v]) => ({
       descripcion,
       cantidad: v.cantidad,
