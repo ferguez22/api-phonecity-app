@@ -205,4 +205,4 @@ async function historialDia(fecha) {
   return { fecha: dia, bloques, filas };
 }
 
-module.exports = { pendientes, marcarPedido, historialDias, historialDia };
+module.exports = { pendientes, marcarPedido, historialDias, historialDia, GRUPOS };
