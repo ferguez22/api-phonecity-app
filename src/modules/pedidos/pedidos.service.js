@@ -1,26 +1,27 @@
 const pool = require('../../config/db');
 const AppError = require('../../utils/AppError');
+const repo = require('./pedidos.repository');
 
 const PROV_WEPHONE = 1;
 const PROV_APOKIN = 2;
 const TIENDA = '319';
 
+function grupo(titulo, clasif, params) {
+  return { titulo, clasif, params, where: `l.fase = 'por_pedir' AND ${clasif}` };
+}
+
 const GRUPOS = {
-  wephone: {
-    titulo: `Pedido Wephone Infotec ${TIENDA}`,
-    where: `l.fase = 'por_pedir' AND l.flujo = 'accesorio' AND l.proveedor_id = ?`,
-    params: [PROV_WEPHONE],
-  },
-  apokin: {
-    titulo: `Pedido Apokin ${TIENDA}`,
-    where: `l.fase = 'por_pedir' AND l.flujo = 'accesorio' AND l.proveedor_id = ?`,
-    params: [PROV_APOKIN],
-  },
-  piezas: {
-    titulo: `Pedido ${TIENDA}`,
-    where: `l.fase = 'por_pedir' AND l.flujo = 'pieza'`,
-    params: [],
-  },
+  wephone: grupo(
+    `Pedido Wephone Infotec ${TIENDA}`,
+    `l.flujo = 'accesorio' AND l.proveedor_id = ?`,
+    [PROV_WEPHONE]
+  ),
+  apokin: grupo(
+    `Pedido Apokin ${TIENDA}`,
+    `l.flujo = 'accesorio' AND l.proveedor_id = ?`,
+    [PROV_APOKIN]
+  ),
+  piezas: grupo(`Pedido ${TIENDA}`, `l.flujo = 'pieza'`, []),
 };
 
 const ORDEN_GRUPOS = ['wephone', 'apokin', 'piezas'];
@@ -36,15 +37,20 @@ function agrupar(rows) {
   for (const r of rows) {
     const desc = descripcion(r);
     if (!desc) continue;
-    map[desc] = (map[desc] || 0) + 1;
+    if (!map[desc]) map[desc] = { cantidad: 0, ids: [] };
+    map[desc].cantidad += 1;
+    if (!map[desc].ids.includes(r.id)) map[desc].ids.push(r.id);
   }
   return map;
 }
 
+function ordenar(map) {
+  return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+}
+
 function construirTexto(titulo, map) {
-  const lineas = Object.entries(map)
-    .sort((a, b) => a[0].localeCompare(b[0], 'es'))
-    .map(([k, v]) => `• ${k}${v > 1 ? ` x${v}` : ''}`);
+  const lineas = ordenar(map)
+    .map(([k, v]) => `• ${k}${v.cantidad > 1 ? ` x${v.cantidad}` : ''}`);
   const cuerpo = lineas.length ? lineas.join('\n') : 'NO HAY PEDIDOS PARA HOY';
   return `${titulo}\n${cuerpo}`;
 }
@@ -135,4 +141,66 @@ async function marcarPedido(grupo) {
   }
 }
 
-module.exports = { pendientes, marcarPedido };
+const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;
+
+function validarFecha(valor, nombre) {
+  const s = String(valor);
+  const d = new Date(`${s}T00:00:00Z`);
+  if (!RE_FECHA.test(s) || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) {
+    throw new AppError(`${nombre} no valida. Formato: YYYY-MM-DD`, 400);
+  }
+  return s;
+}
+
+function unidades(map) {
+  return Object.values(map).reduce((s, v) => s + v.cantidad, 0);
+}
+
+async function historialDias(query = {}) {
+  const desde = query.desde ? validarFecha(query.desde, 'desde') : null;
+  const hasta = query.hasta ? validarFecha(query.hasta, 'hasta') : null;
+  if (desde && hasta && desde > hasta) {
+    throw new AppError('desde no puede ser posterior a hasta', 400);
+  }
+
+  const dias = {};
+  for (const g of ORDEN_GRUPOS) {
+    const { clasif, params } = GRUPOS[g];
+    const rows = await repo.findPedidosEnRango(clasif, params, desde, hasta);
+
+    const porFecha = {};
+    for (const r of rows) (porFecha[r.fecha] ||= []).push(r);
+
+    for (const [fecha, filas] of Object.entries(porFecha)) {
+      const n = unidades(agrupar(filas));
+      if (!n) continue;
+      if (!dias[fecha]) {
+        dias[fecha] = { fecha, ...Object.fromEntries(ORDEN_GRUPOS.map((x) => [x, 0])) };
+      }
+      dias[fecha][g] = n;
+    }
+  }
+
+  return Object.values(dias).sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+async function historialDia(fecha) {
+  const dia = validarFecha(fecha, 'fecha');
+  const bloques = {};
+  const filas = {};
+
+  for (const g of ORDEN_GRUPOS) {
+    const { titulo, clasif, params } = GRUPOS[g];
+    const map = agrupar(await repo.findPedidosEnRango(clasif, params, dia, dia));
+    filas[g] = ordenar(map).map(([descripcion, v]) => ({
+      descripcion,
+      cantidad: v.cantidad,
+      ids: v.ids,
+    }));
+    bloques[g] = filas[g].length ? construirTexto(titulo, map) : '';
+  }
+
+  return { fecha: dia, bloques, filas };
+}
+
+module.exports = { pendientes, marcarPedido, historialDias, historialDia };

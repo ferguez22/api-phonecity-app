@@ -11,4 +11,14 @@ const marcarPedido = asyncHandler(async (req, res) => {
   res.json({ success: true, data, error: null });
 });
 
-module.exports = { pendientes, marcarPedido };
+const historialDias = asyncHandler(async (req, res) => {
+  const data = await service.historialDias(req.query);
+  res.json({ success: true, data, error: null });
+});
+
+const historialDia = asyncHandler(async (req, res) => {
+  const data = await service.historialDia(req.params.fecha);
+  res.json({ success: true, data, error: null });
+});
+
+module.exports = { pendientes, marcarPedido, historialDias, historialDia };
