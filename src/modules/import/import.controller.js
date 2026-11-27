@@ -1,4 +1,4 @@
-const { parseCsv, analyze, executeImport } = require('./import.service');
+const { parseCsv, previewCompleto, conteo: contar, executeImport } = require('./import.service');
 
 async function preview(req, res, next) {
   try {
@@ -6,7 +6,7 @@ async function preview(req, res, next) {
       return res.status(400).json({ success: false, data: null, error: { message: 'Falta el archivo CSV' } });
     }
     const records = parseCsv(req.file.buffer);
-    const data = await analyze(records);
+    const data = await previewCompleto(records);
     res.json({ success: true, data, error: null });
   } catch (err) {
     next(err);
@@ -26,4 +26,13 @@ async function execute(req, res, next) {
   }
 }
 
-module.exports = { preview, execute };
+async function conteo(req, res, next) {
+  try {
+    const data = await contar();
+    res.json({ success: true, data, error: null });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { preview, execute, conteo };

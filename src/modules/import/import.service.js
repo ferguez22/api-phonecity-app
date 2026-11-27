@@ -1,6 +1,9 @@
 const { parse } = require('csv-parse/sync');
 const pool = require('../../config/db');
-const { esSeparador, mapEstado, parseFecha, parsePrecio, parseTel } = require('./import.parser');
+const {
+  _n, esSeparador, mapEstado, etiquetaEstado, parseFecha, parsePrecio, precioInterpretable, parseTel,
+} = require('./import.parser');
+const importRepository = require('./import.repository');
 
 const TIENDA_ID = 1;
 
@@ -155,6 +158,136 @@ async function analyze(records) {
   return processRows(records, { dryRun: true, conn: null });
 }
 
+const MAX_ERRORES = 500;
+
+function esTelefonoVacio(raw) {
+  const s = (raw || '').trim();
+  return !s || ['tienda', 'pedir accesorio'].includes(_n(s));
+}
+
+async function analizarDetalle(records) {
+  const resumen = { filas: 0, validas: 0, conError: 0, vacias: 0, separadores: 0, errores: 0 };
+  const errores = [];
+  const reconocidos = {};
+  const noReconocidos = new Map();
+  const modelos = new Map();
+  const telefonos = new Map();
+  const sinTelefono = new Set();
+
+  function addError(fila, motivo, valor) {
+    resumen.errores += 1;
+    if (errores.length < MAX_ERRORES) errores.push({ fila, motivo, valor });
+  }
+
+  for (let i = 1; i < records.length; i++) {
+    const fila = i + 1;
+    resumen.filas += 1;
+
+    const row = records[i].slice();
+    while (row.length < 8) row.push('');
+    const [estadoRaw, fechaRaw, modeloRaw, nombreRaw, telRaw, precioRaw, piezaRaw] = row;
+    const estado = (estadoRaw || '').trim();
+
+    if (esSeparador(estado)) {
+      resumen.separadores += 1;
+      continue;
+    }
+
+    const vacia = !estado
+      && !(modeloRaw || '').trim()
+      && !(nombreRaw || '').trim()
+      && !(piezaRaw || '').trim()
+      && !(precioRaw || '').trim();
+    if (vacia) {
+      resumen.vacias += 1;
+      continue;
+    }
+
+    let conError = false;
+
+    if (mapEstado(estado).fallback) {
+      conError = true;
+      addError(fila, 'Estado no reconocido', estado);
+      noReconocidos.set(estado, (noReconocidos.get(estado) || 0) + 1);
+    } else {
+      const etiqueta = etiquetaEstado(estado);
+      reconocidos[etiqueta] = (reconocidos[etiqueta] || 0) + 1;
+    }
+
+    const tel = parseTel(telRaw);
+    if (!tel && !esTelefonoVacio(telRaw)) {
+      conError = true;
+      addError(fila, 'Teléfono no válido', (telRaw || '').trim());
+    }
+
+    if ((fechaRaw || '').trim() && !parseFecha(fechaRaw)) {
+      conError = true;
+      addError(fila, 'Fecha no válida', fechaRaw.trim());
+    }
+
+    if (!precioInterpretable(precioRaw)) {
+      conError = true;
+      addError(fila, 'Precio no interpretable', precioRaw.trim());
+    }
+
+    if (conError) resumen.conError += 1;
+    else resumen.validas += 1;
+
+    const modelo = (modeloRaw || '').trim();
+    if (modelo) modelos.set(modelo, (modelos.get(modelo) || 0) + 1);
+
+    const nombre = (nombreRaw || '').trim();
+    if (nombre && nombre.toUpperCase() !== 'TIENDA') {
+      if (tel) {
+        if (!telefonos.has(tel)) telefonos.set(tel, new Map());
+        const nombres = telefonos.get(tel);
+        const nk = _n(nombre);
+        if (!nombres.has(nk)) nombres.set(nk, nombre);
+      } else {
+        sinTelefono.add(_n(nombre));
+      }
+    }
+  }
+
+  const telefonosBase = new Set();
+  for (const t of await importRepository.findTelefonosClientes()) {
+    const norm = parseTel(t);
+    if (norm) telefonosBase.add(norm);
+  }
+
+  let nuevos = 0;
+  let existentes = 0;
+  const duplicados = [];
+  for (const [telefono, nombres] of telefonos) {
+    if (telefonosBase.has(telefono)) existentes += 1;
+    else nuevos += 1;
+    if (nombres.size > 1) duplicados.push({ telefono, nombres: [...nombres.values()] });
+  }
+
+  return {
+    resumen,
+    errores,
+    estados: {
+      reconocidos,
+      noReconocidos: [...noReconocidos].map(([estado, filas]) => ({ estado, filas })),
+    },
+    modelos: [...modelos]
+      .map(([modelo, lineas]) => ({ modelo, lineas }))
+      .sort((a, b) => a.modelo.localeCompare(b.modelo, 'es')),
+    clientes: { nuevos, existentes, sinTelefono: sinTelefono.size, duplicados },
+  };
+}
+
+async function previewCompleto(records) {
+  const base = await analyze(records);
+  const detalle = await analizarDetalle(records);
+  return { ...base, ...detalle };
+}
+
+async function conteo() {
+  return importRepository.contarLineasYClientes();
+}
+
 async function backupCurrent() {
   const tablas = ['linea_historial', 'linea', 'cliente'];
   for (const t of tablas) {
@@ -193,4 +326,4 @@ async function executeImport(records) {
   }
 }
 
-module.exports = { parseCsv, analyze, executeImport };
+module.exports = { parseCsv, analyze, previewCompleto, conteo, executeImport };

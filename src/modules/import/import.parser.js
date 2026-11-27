@@ -40,9 +40,13 @@ const ESTADO_MAP_RAW = {
 
 
 const ESTADO_MAP = {};
+const ESTADO_LABEL = {};
 for (const [label, tuple] of Object.entries(ESTADO_MAP_RAW)) {
   ESTADO_MAP[_nEstado(label)] = tuple;
+  ESTADO_LABEL[_nEstado(label)] = label;
 }
+
+const PRECIO_SIN_IMPORTE = ['tienda', 'avisado', 'revisar', 'pedir accesorio'];
 
 const RE_DIA = /^(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)/i;
 const RE_SEP = /^\d{1,2}\/\d{1,2}\/\d{4}\s*\|/;
@@ -67,6 +71,10 @@ function mapEstado(estado) {
   };
 }
 
+function etiquetaEstado(estado) {
+  return ESTADO_LABEL[_nEstado((estado || '').trim())] || null;
+}
+
 function parseFecha(raw) {
   const s = (raw || '').trim();
   if (!s) return null;
@@ -87,7 +95,7 @@ function parsePrecio(raw) {
   const s = (raw || '').trim();
   if (!s) return { importe: null, tipoCobro: 'normal' };
   if (s.toUpperCase() === 'G') return { importe: null, tipoCobro: 'garantia' };
-  if (['tienda', 'avisado', 'revisar', 'pedir accesorio'].includes(_n(s))) {
+  if (PRECIO_SIN_IMPORTE.includes(_n(s))) {
     return { importe: null, tipoCobro: 'normal' };
   }
   const m = s.match(RE_RANGO);
@@ -106,6 +114,12 @@ function parsePrecio(raw) {
   return { importe: null, tipoCobro: 'normal' };
 }
 
+function precioInterpretable(raw) {
+  const s = (raw || '').trim();
+  if (!s || s.toUpperCase() === 'G' || PRECIO_SIN_IMPORTE.includes(_n(s))) return true;
+  return parsePrecio(s).importe !== null;
+}
+
 function parseTel(raw) {
   let s = (raw || '').trim();
   if (!s || ['tienda', 'pedir accesorio'].includes(_n(s))) return null;
@@ -115,4 +129,4 @@ function parseTel(raw) {
   return s;
 }
 
-module.exports = { _n, esSeparador, mapEstado, parseFecha, parsePrecio, parseTel };
+module.exports = { _n, esSeparador, mapEstado, etiquetaEstado, parseFecha, parsePrecio, precioInterpretable, parseTel };

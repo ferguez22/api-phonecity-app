@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const protect = require('../../middlewares/protect');
+const requireRole = require('../../middlewares/requireRole');
 const controller = require('./import.controller');
 
 const upload = multer({
@@ -19,7 +20,10 @@ const upload = multer({
 
 const router = express.Router();
 
-router.post('/csv/preview', protect, upload.single('file'), controller.preview);
-router.post('/csv/execute', protect, upload.single('file'), controller.execute);
+router.use(protect, requireRole('admin'));
+
+router.get('/conteo', controller.conteo);
+router.post('/csv/preview', upload.single('file'), controller.preview);
+router.post('/csv/execute', upload.single('file'), controller.execute);
 
 module.exports = router;
